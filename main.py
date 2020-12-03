@@ -135,6 +135,7 @@ class Scanner(tk.LabelFrame):
         self.num_scan_instr = 3
         self.scan_instr_list = []
 
+        self.place_guides()
         self.place_add_del()
         self.place_scan_button()
         self.place_sample_num()
@@ -184,57 +185,66 @@ class Scanner(tk.LabelFrame):
             self.end = float(self.end_du.get()) * (1000**(2-self.end_un.current()))
             self.instr = int(self.instr_entry.get())
 
+    def place_guides(self):
+        protocol = "Running Protocol:\n\n"
+        protocol += "0. A WAIT ... BRANCH structure is needed\n"
+        protocol += "1. Turn off Spincore trigger\n"
+        protocol += '2. Click "Scan" button\n'
+        protocol += "3. Turn on Spincore trigger"
+        guides_label = tk.Label(self, text=protocol, bg='sky blue', justify='left')
+        guides_label.grid(row=0, column=0, rowspan=4, sticky='ns')
+
     def place_add_del(self):
         add_del_label = tk.Label(self, text='Add/Delete an instr:')
-        add_del_label.grid(row=0, column=0, pady=0)
+        add_del_label.grid(row=0, column=1, pady=0)
         self.del_button = tk.Button(self, text="-", width=6, bg=button_color, command=self.del_scan_instr)
-        self.del_button.grid(row=0, column=1, sticky='e')
+        self.del_button.grid(row=0, column=2, sticky='e')
         self.add_button = tk.Button(self, text="+", width=6, bg=button_color, command=self.add_scan_instr)
-        self.add_button.grid(row=0, column=2, sticky='e')
+        self.add_button.grid(row=0, column=3, sticky='e')
 
     def place_sample_num(self):
         sample_label = tk.Label(self, text='Sample number:')
-        sample_label.grid(row=1, column=0, pady=3, sticky='e')
+        sample_label.grid(row=1, column=1, pady=3, sticky='e')
         self.sample_num = tk.Entry(self, width=8)
         self.sample_num.insert(0, "10")
-        self.sample_num.grid(row=1, column=1, padx=0, sticky='w')
+        self.sample_num.grid(row=1, column=2, padx=0, sticky='w')
 
     def place_repetition(self):
         rep_label = tk.Label(self, text='Repetition:', anchor='e', width=12)
-        rep_label.grid(row=1, column=2, padx=0, sticky='e')
+        rep_label.grid(row=1, column=3, padx=0, sticky='e')
         self.repetition = tk.Entry(self, width=8)
         self.repetition.insert(0, "20")
-        self.repetition.grid(row=1, column=3, sticky='w')
+        self.repetition.grid(row=1, column=4, sticky='w')
 
     def place_DAQ_ch(self):
         daq_label = tk.Label(self, text='DAQ DIO channel:', width=17, anchor='e')
-        daq_label.grid(row=1, column=4, sticky='e')
+        daq_label.grid(row=1, column=5, sticky='e')
         self.daq_ch = tk.Entry(self, width=18)
         self.daq_ch.insert(0, "Dev1/port0/line7")
-        self.daq_ch.grid(row=1, column=5, sticky='w')
+        self.daq_ch.grid(row=1, column=6, sticky='w')
 
     def place_scan_button(self):
         self.scan_button = tk.Button(self, text="Scan", width=6, bg=button_color, command=self.scan)
-        self.scan_button.grid(row=0, column=4)
+        self.scan_button.grid(row=0, column=5)
         self.stop_button = tk.Button(self, text="Stop scan", width=9, bg=button_color, command=self.stop_scan)
-        self.stop_button.grid(row=0, column=5)
+        self.stop_button.grid(row=0, column=6)
         self.stop_button.configure(state='disabled')
 
     def place_file_name(self):
         file_name_label = tk.Label(self, text='Save sequence as:')
-        file_name_label.grid(row=2, column=0, sticky='e')
+        file_name_label.grid(row=2, column=1, sticky='e')
         self.file_name = tk.Entry(self, width=24)
         self.file_name.insert(0, "Scan_sequence")
-        self.file_name.grid(row=2, column=1, columnspan=3, sticky='w')
+        self.file_name.grid(row=2, column=2, columnspan=3, sticky='w')
 
         self.datetime_var = tk.IntVar()
         self.datetime_var.set(1)
         self.datetime_cb = tk.Checkbutton(self, variable=self.datetime_var, text=r"Auto append data & time")
-        self.datetime_cb.grid(row=2, column=4, columnspan=2)
+        self.datetime_cb.grid(row=2, column=5, columnspan=2)
 
     def place_scan_instr(self):
         self.instr_frame = tk.LabelFrame(self, relief='flat')
-        self.instr_frame.grid(row=3, column=0, columnspan=100, sticky='nw')
+        self.instr_frame.grid(row=3, column=1, columnspan=100, sticky='nw')
         for i in range(self.num_scan_instr):
             self.scan_instr_list.append(self.scan_instr(self.instr_frame))
             self.scan_instr_list[i].grid(row=0, column=i)
@@ -271,7 +281,7 @@ class Scanner(tk.LabelFrame):
         # instruction number sanity check
         for i in range(self.num_scan_instr):
             if self.scan_instr_list[i].instr > self.main.num_instr-1:
-                logging.warning("(Scanner) Instruction number doesn't exist")
+                tk.messagebox.showerror("Error", "(Scanner) Insturction number doesn't exist.")
                 self.widgets_state_change("normal")
                 self.stop_button["state"] = "disabled"
                 return

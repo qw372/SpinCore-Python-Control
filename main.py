@@ -140,6 +140,7 @@ class Scanner(tk.LabelFrame):
         self.place_sample_num()
         self.place_repetition()
         self.place_DAQ_ch()
+        self.place_file_name()
         self.place_scan_elem()
 
 
@@ -215,13 +216,25 @@ class Scanner(tk.LabelFrame):
     def place_scan_button(self):
         self.scan_button = tk.Button(self, text="Scan", width=6, bg="white", command=self.scan)
         self.scan_button.grid(row=0, column=4)
-        self.stop_button = tk.Button(self, text="Stop", width=6, bg="white", command=self.stop_scan)
+        self.stop_button = tk.Button(self, text="Stop scan", width=9, bg="white", command=self.stop_scan)
         self.stop_button.grid(row=0, column=5)
         self.stop_button.configure(state='disabled')
 
+    def place_file_name(self):
+        file_name_label = tk.Label(self, text='Save sequence as:')
+        file_name_label.grid(row=2, column=0, sticky='e')
+        self.file_name = tk.Entry(self, width=24)
+        self.file_name.insert(0, "Scan_sequence")
+        self.file_name.grid(row=2, column=1, columnspan=3, sticky='w')
+
+        self.datetime_var = tk.IntVar()
+        self.datetime_var.set(1)
+        self.datetime_cb = tk.Checkbutton(self, variable=self.datetime_var, text=r"Auto append data & time")
+        self.datetime_cb.grid(row=2, column=4, columnspan=2)
+
     def place_scan_elem(self):
         self.elem_frame = tk.LabelFrame(self, relief='flat')
-        self.elem_frame.grid(row=2, column=0, columnspan=100, sticky='nw')
+        self.elem_frame.grid(row=3, column=0, columnspan=100, sticky='nw')
         for i in range(self.scan_elem_num):
             self.scan_elem_list.append(self.scan_elem(self.elem_frame))
             self.scan_elem_list[i].grid(row=0, column=i)
@@ -241,9 +254,10 @@ class Scanner(tk.LabelFrame):
             self.del_button["state"] = "normal"
 
     def scan(self):
-        # generate randomized scan parameters
         self.widgets_state_change("disabled")
         self.stop_button["state"] = "normal"
+
+        # generate randomized scan parameters
         samp_num = int(self.sample_num.get())
         rep = int(self.repetition.get())
         self.scan_elem_list[0].compile()
@@ -266,7 +280,13 @@ class Scanner(tk.LabelFrame):
         # if scan_param is a 1-dim array, it will be turned into 2-dim
         # if scan_param is a 2-dim array, it won't change
         self.scan_param = np.reshape(self.scan_param, (len(self.scan_param), -1))
-        # print(self.scan_param)
+
+        # save randomized scan sequence self.scan_param to a local file
+        saved = self.save_sequence()
+        if not saved:
+            self.widgets_state_change("normal")
+            self.stop_button["state"] = "disabled"
+            return
 
         # stop and reset spincore
         pb_stop()
@@ -285,12 +305,12 @@ class Scanner(tk.LabelFrame):
         self.task.timing.cfg_change_detection_timing(falling_edge_chan=ch,
                                                     sample_mode=const.AcquisitionType.CONTINUOUS
                                                     )
-        self.task.register_signal_event(const.Signal.CHANGE_DETECTION_EVENT, self.load_param)
         # see https://nidaqmx-python.readthedocs.io/en/latest/task.html for the prototype of callback method
+        self.task.register_signal_event(const.Signal.CHANGE_DETECTION_EVENT, self.load_param)
+
         self.task.start()
 
     def load_param(self, task_handle=None, signal_type=None, callback_date=None):
-        last_time = time.time()
         for i in range(self.scan_elem_num):
             instr = self.scan_elem_list[i].instr
             # every element in scan_elem_list is supposed to be compiled before
@@ -299,14 +319,12 @@ class Scanner(tk.LabelFrame):
             self.main.instrlist[instr].du.delete(0, 'end')
             self.main.instrlist[instr].du.insert(0, str(self.scan_param[self.counter][i]/(1000.0**(2-unit))))
 
-        print(self.scan_param[self.counter])
         self.counter += 1
         self.main.loadboard()
 
         if self.counter == len(self.scan_param):
             self.stop_scan()
 
-        print(time.time()-last_time)
         # return an int is necessary for DAQ callback function
         return 0
 
@@ -317,6 +335,8 @@ class Scanner(tk.LabelFrame):
         self.repetition["state"] = arg
         self.daq_ch["state"] = arg
         self.scan_button["state"] = arg
+        self.file_name["state"] = arg
+        self.datetime_cb["state"] = arg
         for i in range(self.scan_elem_num):
             self.scan_elem_list[i].instr_entry["state"] = arg
             self.scan_elem_list[i].start_du["state"] = arg
@@ -325,9 +345,47 @@ class Scanner(tk.LabelFrame):
             self.scan_elem_list[i].end_un["state"] = arg
 
     def stop_scan(self):
-        self.task.close()
+        try:
+            self.task.close()
+        except Exception as err:
+            logging.warning(err)
+
         self.widgets_state_change("normal")
         self.stop_button["state"] = "disabled"
+
+    def save_sequence(self):
+        file_name = ""
+        if self.file_name.get():
+            file_name += self.file_name.get()
+        if self.datetime_var.get():
+            if file_name != "":
+                file_name += "_"
+            file_name += time.strftime("%Y%m%d_%H%M%S")
+        file_name += ".ini"
+        file_name = r"scan_sequence"+"\\"+file_name
+        if os.path.exists(file_name):
+            overwrite = tk.messagebox.askyesno("Warning", "File name exits. Continue to overwrite it?", default='no')
+            if not overwrite:
+                return False
+
+        config = configparser.ConfigParser()
+
+        config["Settings"] = {}
+        config["Settings"]["sample number"] = self.sample_num.get()
+        config["Settings"]["repetition"] = self.repetition.get()
+        config["Settings"]["unit"] = 'nanosecond'
+        for i in range(len(self.scan_param)):
+            config[f"Sequence element {i}"] = {}
+            for j in range(self.scan_elem_num):
+                instr = self.scan_elem_list[j].instr
+                config[f"Sequence element {i}"][f"instruction no. {instr}"] = str(self.scan_param[i][j])
+        configfile = open(file_name, "w")
+        config.write(configfile)
+        configfile.close()
+
+        return True
+
+
 
 
 class MainWindow(tk.Frame):
@@ -381,19 +439,19 @@ class MainWindow(tk.Frame):
         add_button.grid(row=0, column=3, sticky='w')
 
         # load instructions into PulseBlasterUSB
-        loadboard_button = tk.Button(self.control_frame, text="load board", width=10, bg="white", command=self.loadboard)
+        loadboard_button = tk.Button(self.control_frame, text="Load board", width=10, bg="white", command=self.loadboard)
         loadboard_button.grid(row=0, column=5, sticky='e')
 
         # software trigger PulseBlasterUSB
-        softtrig_button = tk.Button(self.control_frame, text="software trig", width=10, bg="white", command=self.software_trig)
+        softtrig_button = tk.Button(self.control_frame, text="Software trig", width=10, bg="white", command=self.software_trig)
         softtrig_button.grid(row=0, column=6)
 
         # toggle scanner widgets
-        softtrig_button = tk.Button(self.control_frame, text="toggle scanner", width=13, bg="white", command=self.toggle_scanner)
+        softtrig_button = tk.Button(self.control_frame, text="Toggle scanner", width=13, bg="white", command=self.toggle_scanner)
         softtrig_button.grid(row=0, column=7)
 
         # file location label
-        location_label = tk.Label(self.control_frame, text="location to load file: ")
+        location_label = tk.Label(self.control_frame, text="Location to load file: ")
         location_label.grid(row=2, rowspan=2, column=0, columnspan=2, sticky='e')
 
         # location of .txt to load
@@ -401,15 +459,15 @@ class MainWindow(tk.Frame):
         self.location_text.grid(row=2, rowspan =2, column=2, columnspan=5)
 
         # browse and choose a .txt file
-        browsefile_button = tk.Button(self.control_frame, text="browse files", width=10, bg="white", command=self.browse_file)
+        browsefile_button = tk.Button(self.control_frame, text="Browse files", width=10, bg="white", command=self.browse_file)
         browsefile_button.grid(row=2, column=7, padx=5, pady=5, sticky='e')
 
         # load configuraion from a .txt file to this GUI
-        loadconfig_button = tk.Button(self.control_frame, text="load configs", width=10, bg="white", command=self.load_config)
+        loadconfig_button = tk.Button(self.control_frame, text="Load configs", width=10, bg="white", command=self.load_config)
         loadconfig_button.grid(row=3, column=7, padx=5, pady=5, sticky='e')
 
         # saved file name label
-        filename_label = tk.Label(self.control_frame, text="file name to save as: ")
+        filename_label = tk.Label(self.control_frame, text="File name to save as: ")
         filename_label.grid(row=4, column=0, columnspan=2, sticky='e')
 
         # name to append to file name when saving
@@ -420,11 +478,11 @@ class MainWindow(tk.Frame):
         # whether to append date/time to saved file name
         self.datetime_var = tk.IntVar()
         self.datetime_var.set(1)
-        self.datetime_cb = tk.Checkbutton(self.control_frame, variable=self.datetime_var, text=r"auto append data & time")
+        self.datetime_cb = tk.Checkbutton(self.control_frame, variable=self.datetime_var, text=r"Auto append data & time")
         self.datetime_cb.grid(row=4, column=4, columnspan=3, sticky='w')
 
         # save configuraion to a .txt file
-        save_button = tk.Button(self.control_frame, text="save configs", width=10, bg="white", command=self.save_config)
+        save_button = tk.Button(self.control_frame, text="Save configs", width=10, bg="white", command=self.save_config)
         save_button.grid(row=4, column=7, padx=5, pady=2, sticky='e')
 
         for i in range(4):

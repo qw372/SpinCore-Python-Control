@@ -272,6 +272,8 @@ class Scanner(tk.LabelFrame):
         for i in range(self.num_scan_instr):
             if self.scan_instr_list[i].instr > self.main.num_instr-1:
                 logging.warning("(Scanner) Instruction number doesn't exist")
+                self.widgets_state_change("normal")
+                self.stop_button["state"] = "disabled"
                 return
 
         self.scan_param = self.scan_param.T

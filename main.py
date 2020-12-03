@@ -22,7 +22,7 @@ class Descr(tk.LabelFrame):
     def __init__(self, master=None):
         super().__init__(master)
         self.configure(relief='flat', borderwidth=0, highlightthickness=0)
-        self.place_duration() # argument "self" is automatically passed to these functions
+        self.place_duration()
         self.place_note()
         self.place_channels()
         self.place_opcode()
@@ -188,8 +188,8 @@ class Scanner(tk.LabelFrame):
         add_del_label.grid(row=0, column=0, pady=0)
         self.del_button = tk.Button(self, text="-", width=6, bg="white", command=self.del_scan_slot)
         self.del_button.grid(row=0, column=1, sticky='e')
-        add_button = tk.Button(self, text="+", width=6, bg="white", command=self.add_scan_slot)
-        add_button.grid(row=0, column=2, sticky='e')
+        self.add_button = tk.Button(self, text="+", width=6, bg="white", command=self.add_scan_slot)
+        self.add_button.grid(row=0, column=2, sticky='e')
 
     def place_sample_num(self):
         sample_label = tk.Label(self, text='Sample number:')
@@ -215,11 +215,14 @@ class Scanner(tk.LabelFrame):
     def place_scan_button(self):
         self.scan_button = tk.Button(self, text="Scan", width=6, bg="white", command=self.scan)
         self.scan_button.grid(row=0, column=4)
+        self.stop_button = tk.Button(self, text="Stop", width=6, bg="white", command=self.stop_scan)
+        self.stop_button.grid(row=0, column=5)
+        self.stop_button.configure(state='disabled')
 
     def place_scan_elem(self):
         self.elem_frame = tk.LabelFrame(self, relief='flat')
         self.elem_frame.grid(row=2, column=0, columnspan=100, sticky='nw')
-        for i in range(3):
+        for i in range(self.scan_elem_num):
             self.scan_elem_list.append(self.scan_elem(self.elem_frame))
             self.scan_elem_list[i].grid(row=0, column=i)
 
@@ -239,6 +242,8 @@ class Scanner(tk.LabelFrame):
 
     def scan(self):
         # generate randomized scan parameters
+        self.widgets_state_change("disabled")
+        self.stop_button["state"] = "normal"
         samp_num = int(self.sample_num.get())
         rep = int(self.repetition.get())
         self.scan_elem_list[0].compile()
@@ -295,13 +300,33 @@ class Scanner(tk.LabelFrame):
 
         print(self.scan_param[self.counter])
         self.counter += 1
-        # self.main.loadboard()
+        self.main.loadboard()
 
         if self.counter == len(self.scan_param):
             self.task.close()
+            self.widgets_state_change("normal")
+            self.stop_button["state"] = "disabled"
 
         # return an int is necessary for DAQ callback function
         return 0
+
+    def widgets_state_change(self, arg):
+        self.del_button["state"] = arg
+        self.add_button["state"] = arg
+        self.sample_num["state"] = arg
+        self.repetition["state"] = arg
+        self.daq_ch["state"] = arg
+        self.scan_button["state"] = arg
+        for i in range(self.scan_elem_num):
+            self.scan_elem_list[i].instr_entry["state"] = arg
+            self.scan_elem_list[i].start_du["state"] = arg
+            self.scan_elem_list[i].start_un["state"] = arg
+            self.scan_elem_list[i].end_du["state"] = arg
+            self.scan_elem_list[i].end_un["state"] = arg
+
+
+    def stop_scan(self):
+        pass
 
 
 class MainWindow(tk.Frame):
@@ -577,4 +602,4 @@ mygui = MainWindow(root)
 mygui.mainloop()
 
 # pb_close function has to be called at the end of any programming/start/stop instructions
-# pb_close()
+pb_close()

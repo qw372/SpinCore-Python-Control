@@ -132,8 +132,8 @@ class Scanner(tk.LabelFrame):
         super().__init__(MainWindow.frame)
         self.configure(relief='groove', text='Linear Scanner', font='Helvetica 10 bold')
         self.main = MainWindow
-        self.scan_elem_num = 3
-        self.scan_elem_list = []
+        self.num_scan_instr = 3
+        self.scan_instr_list = []
 
         self.place_add_del()
         self.place_scan_button()
@@ -141,10 +141,10 @@ class Scanner(tk.LabelFrame):
         self.place_repetition()
         self.place_DAQ_ch()
         self.place_file_name()
-        self.place_scan_elem()
+        self.place_scan_instr()
 
 
-    class scan_elem(tk.LabelFrame):
+    class scan_instr(tk.LabelFrame):
         def __init__(self, master):
             super().__init__(master)
             self.configure(relief='groove')
@@ -185,11 +185,11 @@ class Scanner(tk.LabelFrame):
             self.instr = int(self.instr_entry.get())
 
     def place_add_del(self):
-        add_del_label = tk.Label(self, text='Add/Delete a scan slot:')
+        add_del_label = tk.Label(self, text='Add/Delete an instr:')
         add_del_label.grid(row=0, column=0, pady=0)
-        self.del_button = tk.Button(self, text="-", width=6, bg="white", command=self.del_scan_slot)
+        self.del_button = tk.Button(self, text="-", width=6, bg="white", command=self.del_scan_instr)
         self.del_button.grid(row=0, column=1, sticky='e')
-        self.add_button = tk.Button(self, text="+", width=6, bg="white", command=self.add_scan_slot)
+        self.add_button = tk.Button(self, text="+", width=6, bg="white", command=self.add_scan_instr)
         self.add_button.grid(row=0, column=2, sticky='e')
 
     def place_sample_num(self):
@@ -232,25 +232,25 @@ class Scanner(tk.LabelFrame):
         self.datetime_cb = tk.Checkbutton(self, variable=self.datetime_var, text=r"Auto append data & time")
         self.datetime_cb.grid(row=2, column=4, columnspan=2)
 
-    def place_scan_elem(self):
-        self.elem_frame = tk.LabelFrame(self, relief='flat')
-        self.elem_frame.grid(row=3, column=0, columnspan=100, sticky='nw')
-        for i in range(self.scan_elem_num):
-            self.scan_elem_list.append(self.scan_elem(self.elem_frame))
-            self.scan_elem_list[i].grid(row=0, column=i)
+    def place_scan_instr(self):
+        self.instr_frame = tk.LabelFrame(self, relief='flat')
+        self.instr_frame.grid(row=3, column=0, columnspan=100, sticky='nw')
+        for i in range(self.num_scan_instr):
+            self.scan_instr_list.append(self.scan_instr(self.instr_frame))
+            self.scan_instr_list[i].grid(row=0, column=i)
 
-    def del_scan_slot(self):
-        self.scan_elem_list[-1].destroy()
-        del self.scan_elem_list[-1]
-        self.scan_elem_num -= 1
-        if self.scan_elem_num == 1:
+    def del_scan_instr(self):
+        self.scan_instr_list[-1].destroy()
+        del self.scan_instr_list[-1]
+        self.num_scan_instr -= 1
+        if self.num_scan_instr == 1:
             self.del_button["state"] = "disabled"
 
-    def add_scan_slot(self):
-        self.scan_elem_list.append(self.scan_elem(self.elem_frame))
-        self.scan_elem_list[self.scan_elem_num].grid(row=0, column=self.scan_elem_num)
-        self.scan_elem_num +=1
-        if (self.del_button["state"] == "disabled") and (self.scan_elem_num > 1):
+    def add_scan_instr(self):
+        self.scan_instr_list.append(self.scan_instr(self.instr_frame))
+        self.scan_instr_list[self.num_scan_instr].grid(row=0, column=self.num_scan_instr)
+        self.num_scan_instr +=1
+        if (self.del_button["state"] == "disabled") and (self.num_scan_instr > 1):
             self.del_button["state"] = "normal"
 
     def scan(self):
@@ -260,17 +260,17 @@ class Scanner(tk.LabelFrame):
         # generate randomized scan parameters
         samp_num = int(self.sample_num.get())
         rep = int(self.repetition.get())
-        self.scan_elem_list[0].compile()
-        self.scan_param = np.linspace(self.scan_elem_list[0].start, self.scan_elem_list[0].end, samp_num)
-        if self.scan_elem_num > 1:
-            for i in range(self.scan_elem_num-1):
-                self.scan_elem_list[i+1].compile()
-                s = np.linspace(self.scan_elem_list[i+1].start, self.scan_elem_list[i+1].end, samp_num)
+        self.scan_instr_list[0].compile()
+        self.scan_param = np.linspace(self.scan_instr_list[0].start, self.scan_instr_list[0].end, samp_num)
+        if self.num_scan_instr > 1:
+            for i in range(self.num_scan_instr-1):
+                self.scan_instr_list[i+1].compile()
+                s = np.linspace(self.scan_instr_list[i+1].start, self.scan_instr_list[i+1].end, samp_num)
                 self.scan_param = np.vstack((self.scan_param, s))
 
         # instruction number sanity check
-        for i in range(self.scan_elem_num):
-            if self.scan_elem_list[i].instr > self.main.num_instr-1:
+        for i in range(self.num_scan_instr):
+            if self.scan_instr_list[i].instr > self.main.num_instr-1:
                 logging.warning("(Scanner) Instruction number doesn't exist")
                 return
 
@@ -311,10 +311,10 @@ class Scanner(tk.LabelFrame):
         self.task.start()
 
     def load_param(self, task_handle=None, signal_type=None, callback_date=None):
-        for i in range(self.scan_elem_num):
-            instr = self.scan_elem_list[i].instr
-            # every element in scan_elem_list is supposed to be compiled before
-            unit = self.scan_elem_list[i].start_un.current()
+        for i in range(self.num_scan_instr):
+            instr = self.scan_instr_list[i].instr
+            # every element in scan_instr_list is supposed to be compiled before
+            unit = self.scan_instr_list[i].start_un.current()
             self.main.instrlist[instr].un.current(unit)
             self.main.instrlist[instr].du.delete(0, 'end')
             self.main.instrlist[instr].du.insert(0, str(self.scan_param[self.counter][i]/(1000.0**(2-unit))))
@@ -337,12 +337,12 @@ class Scanner(tk.LabelFrame):
         self.scan_button["state"] = arg
         self.file_name["state"] = arg
         self.datetime_cb["state"] = arg
-        for i in range(self.scan_elem_num):
-            self.scan_elem_list[i].instr_entry["state"] = arg
-            self.scan_elem_list[i].start_du["state"] = arg
-            self.scan_elem_list[i].start_un["state"] = arg
-            self.scan_elem_list[i].end_du["state"] = arg
-            self.scan_elem_list[i].end_un["state"] = arg
+        for i in range(self.num_scan_instr):
+            self.scan_instr_list[i].instr_entry["state"] = arg
+            self.scan_instr_list[i].start_du["state"] = arg
+            self.scan_instr_list[i].start_un["state"] = arg
+            self.scan_instr_list[i].end_du["state"] = arg
+            self.scan_instr_list[i].end_un["state"] = arg
 
     def stop_scan(self):
         try:
@@ -376,16 +376,20 @@ class Scanner(tk.LabelFrame):
         config["Settings"]["unit"] = 'nanosecond'
         for i in range(len(self.scan_param)):
             config[f"Sequence element {i}"] = {}
-            for j in range(self.scan_elem_num):
-                instr = self.scan_elem_list[j].instr
-                config[f"Sequence element {i}"][f"instruction no. {instr}"] = str(self.scan_param[i][j])
+            for j in range(self.num_scan_instr):
+                instr = self.scan_instr_list[j].instr
+                config[f"Sequence element {i}"][f"instr no. {instr}"] = str(self.scan_param[i][j])
         configfile = open(file_name, "w")
         config.write(configfile)
         configfile.close()
 
         return True
 
-
+    def chop_scan_instr(self, new_num):
+        while self.num_scan_instr > new_num:
+            self.del_scan_instr()
+        while self.num_scan_instr < new_num:
+            self.add_scan_instr()
 
 
 class MainWindow(tk.Frame):
@@ -600,11 +604,14 @@ class MainWindow(tk.Frame):
 
         config = configparser.ConfigParser()
         config.read(file_loca) # remove '\n' at the end of location_text.get()
-        dev_name = [dev.strip() for dev in config["Devices"]["devices"].split(',')]
+
+        dev_name = [dev.strip() for dev in config["General settings"].get("devices").split(',')]
         for i in range(channel_num):
             self.descr_col.ch_label_list[i].delete(0, 'end')
             self.descr_col.ch_label_list[i].insert(0, dev_name[channel_num-1-i])
-        self.chop_instr(len(config.sections())-1)
+        new_num_instr = int(config["General settings"].get("number of instructions"))
+        self.chop_instr(new_num_instr)
+
         for i in range(self.num_instr):
             self.instrlist[i].note.delete(0, 'end')
             self.instrlist[i].note.insert(0, config[f"Instr {i}"].get("instr note"))
@@ -616,6 +623,25 @@ class MainWindow(tk.Frame):
             self.instrlist[i].opc.current(opcodes.index(config[f"Instr {i}"].get("op code")))
             for j in range(channel_num):
                 self.instrlist[i].cbvarlist[j].set(int(config[f"Instr {i}"]["ttl output pattern"][channel_num+1-j]))
+
+        self.scanner.sample_num.delete(0, 'end')
+        self.scanner.sample_num.insert(0, config["Scanner settings"].get("sample number"))
+        self.scanner.repetition.delete(0, 'end')
+        self.scanner.repetition.insert(0, config["Scanner settings"].get("repetition"))
+        new_num_scan_instr = int(config["Scanner settings"].get("number of scanned instr"))
+        self.scanner.chop_scan_instr(new_num_scan_instr)
+
+        for i in range(self.scanner.num_scan_instr):
+            scan_instr = self.scanner.scan_instr_list[i]
+            scan_instr.instr_entry.delete(0, 'end')
+            scan_instr.instr_entry.insert(0, config[f"Scanned Instr {i}"].get("instr no."))
+            scan_instr.start_du.delete(0, 'end')
+            scan_instr.start_du.insert(0, config[f"Scanned Instr {i}"].get("start duration"))
+            scan_instr.start_un.current(duration_unit.index(config[f"Scanned Instr {i}"].get("start unit")))
+            scan_instr.end_du.delete(0, 'end')
+            scan_instr.end_du.insert(0, config[f"Scanned Instr {i}"].get("end duration"))
+            scan_instr.end_un.current(duration_unit.index(config[f"Scanned Instr {i}"].get("end unit")))
+
 
     def save_config(self):
         file_name = ""
@@ -633,13 +659,12 @@ class MainWindow(tk.Frame):
                 return
 
         config = configparser.ConfigParser(allow_no_value=True)
-        # config["Settings"] = {}
-        # config["Settings"]["spinapi lib version"] = str(pb_get_version())
-        # config["Settings"]["number of boards in system"] = str(pb_count_boards())
+
         self.descr_col.compile_ch_label_text()
-        config["Devices"] = {}
-        config["Devices"]["# form channel {:d} to channel 0".format(channel_num-1)] = None
-        config["Devices"]["devices"] = ", ".join(self.descr_col.ch_label_text)
+        config["General settings"] = {}
+        config["General settings"]["number of instructions"] = str(self.num_instr)
+        config["General settings"]["# form channel {:d} to channel 0".format(channel_num-1)] = None
+        config["General settings"]["devices"] = ", ".join(self.descr_col.ch_label_text)
         for i in range(self.num_instr):
             self.instrlist[i].compile_instr()
             config[f"Instr {i}"] = {}
@@ -649,6 +674,18 @@ class MainWindow(tk.Frame):
             config[f"Instr {i}"]["op data"] = str(self.instrlist[i].values[3])
             config[f"Instr {i}"]["duration time"] = self.instrlist[i].du.get()
             config[f"Instr {i}"]["duration unit"] = duration_unit[self.instrlist[i].un.current()]
+
+        config["Scanner settings"] = {}
+        config["Scanner settings"]["sample number"] = self.scanner.sample_num.get()
+        config["Scanner settings"]["repetition"] = self.scanner.repetition.get()
+        config["Scanner settings"]["number of scanned instr"] = str(self.scanner.num_scan_instr)
+        for i in range(self.scanner.num_scan_instr):
+            config[f"Scanned Instr {i}"] = {}
+            config[f"Scanned Instr {i}"]["instr no."] = self.scanner.scan_instr_list[i].instr_entry.get()
+            config[f"Scanned Instr {i}"]["start duration"] = self.scanner.scan_instr_list[i].start_du.get()
+            config[f"Scanned Instr {i}"]["start unit"] = duration_unit[self.scanner.scan_instr_list[i].start_un.current()]
+            config[f"Scanned Instr {i}"]["end duration"] = self.scanner.scan_instr_list[i].end_du.get()
+            config[f"Scanned Instr {i}"]["end unit"] = duration_unit[self.scanner.scan_instr_list[i].end_un.current()]
 
         configfile = open(file_name, "w")
         config.write(configfile)

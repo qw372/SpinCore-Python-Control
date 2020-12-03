@@ -209,7 +209,7 @@ class Scanner(tk.LabelFrame):
         daq_label = tk.Label(self, text='DAQ DIO channel:', width=17, anchor='e')
         daq_label.grid(row=1, column=4, sticky='e')
         self.daq_ch = tk.Entry(self, width=18)
-        self.daq_ch.insert(0, "Dev1/port0/line0")
+        self.daq_ch.insert(0, "Dev1/port0/line7")
         self.daq_ch.grid(row=1, column=5, sticky='w')
 
     def place_scan_button(self):
@@ -247,7 +247,7 @@ class Scanner(tk.LabelFrame):
             for i in range(self.scan_elem_num-1):
                 self.scan_elem_list[i+1].compile()
                 s = np.linspace(self.scan_elem_list[i+1].start, self.scan_elem_list[i+1].end, samp_num)
-                scan_param = np.vstack((self.scan_param, s))
+                self.scan_param = np.vstack((self.scan_param, s))
 
         # instruction number sanity check
         for i in range(self.scan_elem_num):
@@ -255,11 +255,13 @@ class Scanner(tk.LabelFrame):
                 logging.warning("(Scanner) Instruction number doesn't exist")
                 return
 
+        self.scan_param = self.scan_param.T
         self.scan_param = np.repeat(self.scan_param, rep, axis=0)
         np.random.shuffle(self.scan_param)
         # if scan_param is a 1-dim array, it will be turned into 2-dim
         # if scan_param is a 2-dim array, it won't change
         self.scan_param = np.reshape(self.scan_param, (len(self.scan_param), -1))
+        # print(self.scan_param)
 
         # stop and reset spincore
         pb_stop()
@@ -279,6 +281,7 @@ class Scanner(tk.LabelFrame):
                                                     sample_mode=const.AcquisitionType.CONTINUOUS
                                                     )
         self.task.register_signal_event(const.Signal.CHANGE_DETECTION_EVENT, self.load_param)
+        # see https://nidaqmx-python.readthedocs.io/en/latest/task.html for the prototype of callback method
         self.task.start()
 
     def load_param(self, task_handle=None, signal_type=None, callback_date=None):
@@ -288,12 +291,17 @@ class Scanner(tk.LabelFrame):
             unit = self.scan_elem_list[i].start_un.current()
             self.main.instrlist[instr].un.current(unit)
             self.main.instrlist[instr].du.delete(0, 'end')
-            self.main.instrlist[instr].du.insert(0, str(self.scan_param[self.counter][i]/(1000**(2-unit))))
+            self.main.instrlist[instr].du.insert(0, str(self.scan_param[self.counter][i]/(1000.0**(2-unit))))
 
+        print(self.scan_param[self.counter])
         self.counter += 1
         # self.main.loadboard()
+
         if self.counter == len(self.scan_param):
-            self.close()
+            self.task.close()
+
+        # return an int is necessary for DAQ callback function
+        return 0
 
 
 class MainWindow(tk.Frame):

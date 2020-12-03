@@ -11,7 +11,7 @@ import nidaqmx.constants as const
 from spinapi import *
 
 channel_num = 24 # number of TTL output channels of SpinCore PulseBlasterUSB
-wincolor = 'Gray95' # main window background color
+button_color = 'white'
 bgcolorlist = ['lavender', 'honeydew'] # TTL output channel background color
 duration_unit = ["ms", "us", "ns"]
 opcodes = ["CONTINUE", "STOP", "LOOP", "END_LOOP", "JSR", "RTS", "BRANCH", "LONG_DELAY", "WAIT"]
@@ -30,11 +30,11 @@ class Descr(tk.LabelFrame):
         self.place_instrnum()
 
     def place_duration(self):
-        self.du = tk.Label(self, text='Duration:', bg=wincolor)
+        self.du = tk.Label(self, text='Duration:')
         self.du.grid(row=0, column=1, padx=0, ipady=1)
 
     def place_note(self):
-        self.un = tk.Label(self, text='Note:', bg=wincolor)
+        self.un = tk.Label(self, text='Note:')
         self.un.grid(row=1, column=1, padx=0, ipady=1)
 
     def place_channels(self):
@@ -48,15 +48,15 @@ class Descr(tk.LabelFrame):
             self.ch.grid(row=2+i, column=1, ipady=2, sticky='news')
 
     def place_opcode(self):
-        self.opc = tk.Label(self, text='Op code:', bg=wincolor)
+        self.opc = tk.Label(self, text='Op code:')
         self.opc.grid(row=channel_num+2, column=1)
 
     def place_opdata(self):
-        self.opd = tk.Label(self, text='Op data:', bg=wincolor)
+        self.opd = tk.Label(self, text='Op data:')
         self.opd.grid(row=channel_num+3, column=1)
 
     def place_instrnum(self):
-        self.ins = tk.Label(self, text='Instruction #:', bg=wincolor)
+        self.ins = tk.Label(self, text='Instruction #:')
         self.ins.grid(row=channel_num+4, column=1)
 
     def compile_ch_label_text(self):
@@ -112,7 +112,7 @@ class Instr(tk.LabelFrame):
         self.opd.insert(0, "0")
 
     def place_instrnum(self):
-        self.ins = tk.Label(self, text=str(self.instr_num), bg=wincolor)
+        self.ins = tk.Label(self, text=str(self.instr_num))
         self.ins.grid(row=channel_num+4, column=0)
 
     def compile_instr(self):
@@ -187,9 +187,9 @@ class Scanner(tk.LabelFrame):
     def place_add_del(self):
         add_del_label = tk.Label(self, text='Add/Delete an instr:')
         add_del_label.grid(row=0, column=0, pady=0)
-        self.del_button = tk.Button(self, text="-", width=6, bg="white", command=self.del_scan_instr)
+        self.del_button = tk.Button(self, text="-", width=6, bg=button_color, command=self.del_scan_instr)
         self.del_button.grid(row=0, column=1, sticky='e')
-        self.add_button = tk.Button(self, text="+", width=6, bg="white", command=self.add_scan_instr)
+        self.add_button = tk.Button(self, text="+", width=6, bg=button_color, command=self.add_scan_instr)
         self.add_button.grid(row=0, column=2, sticky='e')
 
     def place_sample_num(self):
@@ -200,7 +200,7 @@ class Scanner(tk.LabelFrame):
         self.sample_num.grid(row=1, column=1, padx=0, sticky='w')
 
     def place_repetition(self):
-        rep_label = tk.Label(self, text='Repetition:', bg=wincolor, anchor='e', width=12)
+        rep_label = tk.Label(self, text='Repetition:', anchor='e', width=12)
         rep_label.grid(row=1, column=2, padx=0, sticky='e')
         self.repetition = tk.Entry(self, width=8)
         self.repetition.insert(0, "20")
@@ -214,9 +214,9 @@ class Scanner(tk.LabelFrame):
         self.daq_ch.grid(row=1, column=5, sticky='w')
 
     def place_scan_button(self):
-        self.scan_button = tk.Button(self, text="Scan", width=6, bg="white", command=self.scan)
+        self.scan_button = tk.Button(self, text="Scan", width=6, bg=button_color, command=self.scan)
         self.scan_button.grid(row=0, column=4)
-        self.stop_button = tk.Button(self, text="Stop scan", width=9, bg="white", command=self.stop_scan)
+        self.stop_button = tk.Button(self, text="Stop scan", width=9, bg=button_color, command=self.stop_scan)
         self.stop_button.grid(row=0, column=5)
         self.stop_button.configure(state='disabled')
 
@@ -411,8 +411,8 @@ class MainWindow(tk.Frame):
         # Followed the following threads to add scroll bars:
         # https://stackoverflow.com/questions/3085696/adding-a-scrollbar-to-a-group-of-widgets-in-tkinter
         # https://stackoverflow.com/questions/17355902/tkinter-binding-mousewheel-to-scrollbar
-        self.canvas = tk.Canvas(self.master, borderwidth=0, background="gray95")
-        self.frame = tk.Frame(self.canvas, background="gray95")
+        self.canvas = tk.Canvas(self.master, borderwidth=0, highlightthickness=0)
+        self.frame = tk.Frame(self.canvas)
         self.frame.configure(relief='flat', borderwidth=0, highlightthickness=0)
         vsb = tk.Scrollbar(self.master, orient="vertical", command=self.canvas.yview)
         hsb = tk.Scrollbar(self.master, orient="horizontal", command=self.canvas.xview)
@@ -435,23 +435,23 @@ class MainWindow(tk.Frame):
         add_del_label.grid(row=0, column=0, columnspan=2, sticky='e')
 
         # delete the last instruction column
-        self.del_button = tk.Button(self.control_frame, text="-", width=6, bg="white", command=self.del_instr)
+        self.del_button = tk.Button(self.control_frame, text="-", width=6, bg=button_color, command=self.del_instr)
         self.del_button.grid(row=0, column=2)
 
         # add an instruction olumn after the last one
-        add_button = tk.Button(self.control_frame, text="+", width=6, bg="white", command=self.add_instr)
+        add_button = tk.Button(self.control_frame, text="+", width=6, bg=button_color, command=self.add_instr)
         add_button.grid(row=0, column=3, sticky='w')
 
         # load instructions into PulseBlasterUSB
-        loadboard_button = tk.Button(self.control_frame, text="Load board", width=10, bg="white", command=self.loadboard)
+        loadboard_button = tk.Button(self.control_frame, text="Load board", width=10, bg=button_color, command=self.loadboard)
         loadboard_button.grid(row=0, column=5, sticky='e')
 
         # software trigger PulseBlasterUSB
-        softtrig_button = tk.Button(self.control_frame, text="Software trig", width=10, bg="white", command=self.software_trig)
+        softtrig_button = tk.Button(self.control_frame, text="Software trig", width=10, bg=button_color, command=self.software_trig)
         softtrig_button.grid(row=0, column=6)
 
         # toggle scanner widgets
-        softtrig_button = tk.Button(self.control_frame, text="Toggle scanner", width=13, bg="white", command=self.toggle_scanner)
+        softtrig_button = tk.Button(self.control_frame, text="Toggle scanner", width=13, bg=button_color, command=self.toggle_scanner)
         softtrig_button.grid(row=0, column=7)
 
         # file location label
@@ -463,11 +463,11 @@ class MainWindow(tk.Frame):
         self.location_text.grid(row=2, rowspan =2, column=2, columnspan=5)
 
         # browse and choose a .txt file
-        browsefile_button = tk.Button(self.control_frame, text="Browse files", width=10, bg="white", command=self.browse_file)
+        browsefile_button = tk.Button(self.control_frame, text="Browse files", width=10, bg=button_color, command=self.browse_file)
         browsefile_button.grid(row=2, column=7, padx=5, pady=5, sticky='e')
 
         # load configuraion from a .txt file to this GUI
-        loadconfig_button = tk.Button(self.control_frame, text="Load configs", width=10, bg="white", command=self.load_config)
+        loadconfig_button = tk.Button(self.control_frame, text="Load configs", width=10, bg=button_color, command=self.load_config)
         loadconfig_button.grid(row=3, column=7, padx=5, pady=5, sticky='e')
 
         # saved file name label
@@ -486,7 +486,7 @@ class MainWindow(tk.Frame):
         self.datetime_cb.grid(row=4, column=4, columnspan=3, sticky='w')
 
         # save configuraion to a .txt file
-        save_button = tk.Button(self.control_frame, text="Save configs", width=10, bg="white", command=self.save_config)
+        save_button = tk.Button(self.control_frame, text="Save configs", width=10, bg=button_color, command=self.save_config)
         save_button.grid(row=4, column=7, padx=5, pady=2, sticky='e')
 
         for i in range(4):

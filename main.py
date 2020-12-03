@@ -290,6 +290,7 @@ class Scanner(tk.LabelFrame):
         self.task.start()
 
     def load_param(self, task_handle=None, signal_type=None, callback_date=None):
+        last_time = time.time()
         for i in range(self.scan_elem_num):
             instr = self.scan_elem_list[i].instr
             # every element in scan_elem_list is supposed to be compiled before
@@ -303,10 +304,9 @@ class Scanner(tk.LabelFrame):
         self.main.loadboard()
 
         if self.counter == len(self.scan_param):
-            self.task.close()
-            self.widgets_state_change("normal")
-            self.stop_button["state"] = "disabled"
+            self.stop_scan()
 
+        print(time.time()-last_time)
         # return an int is necessary for DAQ callback function
         return 0
 
@@ -324,9 +324,10 @@ class Scanner(tk.LabelFrame):
             self.scan_elem_list[i].end_du["state"] = arg
             self.scan_elem_list[i].end_un["state"] = arg
 
-
     def stop_scan(self):
-        pass
+        self.task.close()
+        self.widgets_state_change("normal")
+        self.stop_button["state"] = "disabled"
 
 
 class MainWindow(tk.Frame):

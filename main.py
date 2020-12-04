@@ -338,7 +338,7 @@ class Scanner(tk.LabelFrame):
 
         self.counter += 1
         self.main.loadboard()
-        self.progbar['value'] = 1.0/len(scan_param)
+        self.progbar['value'] = self.counter/len(self.scan_param)*100.0
 
         if self.counter == len(self.scan_param):
             self.stop_scan()

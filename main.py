@@ -135,6 +135,7 @@ class Scanner(tk.LabelFrame):
         self.num_scan_instr = 3
         self.scan_instr_list = []
 
+        self.place_progress_bar()
         self.place_guides()
         self.place_add_del()
         self.place_scan_button()
@@ -185,14 +186,18 @@ class Scanner(tk.LabelFrame):
             self.end = float(self.end_du.get()) * (1000**(2-self.end_un.current()))
             self.instr = int(self.instr_entry.get())
 
+    def place_progress_bar(self):
+        self.progbar = ttk.Progressbar(self, orient='horizontal', length=200, mode='determinate')
+        self.progbar.grid(row=0, column=0)
+
     def place_guides(self):
-        protocol = "Running Protocol:\n\n"
+        protocol = "Control Protocol:\n\n"
         protocol += "0. A WAIT ... BRANCH structure is needed\n"
         protocol += "1. Turn off Spincore trigger\n"
         protocol += '2. Click "Scan" button\n'
         protocol += "3. Turn on Spincore trigger"
         guides_label = tk.Label(self, text=protocol, bg='sky blue', justify='left')
-        guides_label.grid(row=0, column=0, rowspan=4, sticky='ns')
+        guides_label.grid(row=1, column=0, rowspan=3, sticky='ns')
 
     def place_add_del(self):
         add_del_label = tk.Label(self, text='Add/Delete an instr:')
@@ -200,7 +205,7 @@ class Scanner(tk.LabelFrame):
         self.del_button = tk.Button(self, text="-", width=6, bg=button_color, command=self.del_scan_instr)
         self.del_button.grid(row=0, column=2, sticky='e')
         self.add_button = tk.Button(self, text="+", width=6, bg=button_color, command=self.add_scan_instr)
-        self.add_button.grid(row=0, column=3, sticky='e')
+        self.add_button.grid(row=0, column=3)
 
     def place_sample_num(self):
         sample_label = tk.Label(self, text='Sample number:')
@@ -333,6 +338,7 @@ class Scanner(tk.LabelFrame):
 
         self.counter += 1
         self.main.loadboard()
+        self.progbar['value'] = 1.0/len(scan_param)
 
         if self.counter == len(self.scan_param):
             self.stop_scan()
@@ -364,6 +370,7 @@ class Scanner(tk.LabelFrame):
 
         self.widgets_state_change("normal")
         self.stop_button["state"] = "disabled"
+        self.progbar['value'] = 0
 
     def save_sequence(self):
         file_name = ""

@@ -132,7 +132,7 @@ class Scanner(tk.LabelFrame):
         super().__init__(MainWindow.frame)
         self.configure(relief='groove', text='Linear Scanner', font='Helvetica 10 bold')
         self.main = MainWindow
-        self.num_scan_instr = 3
+        self.num_scan_instr = 2
         self.scan_instr_list = []
 
         self.place_progress_bar()
@@ -225,7 +225,7 @@ class Scanner(tk.LabelFrame):
         daq_label = tk.Label(self, text='DAQ DIO channel:', width=17, anchor='e')
         daq_label.grid(row=1, column=5, sticky='e')
         self.daq_ch = tk.Entry(self, width=18)
-        self.daq_ch.insert(0, "Dev1/port0/line7")
+        self.daq_ch.insert(0, "Dev3/port0/line0")
         self.daq_ch.grid(row=1, column=6, sticky='w')
 
     def place_scan_button(self):
@@ -319,7 +319,7 @@ class Scanner(tk.LabelFrame):
         self.task = nidaqmx.Task()
         ch = self.daq_ch.get()
         self.task.di_channels.add_di_chan(ch)
-        self.task.timing.cfg_change_detection_timing(falling_edge_chan=ch,
+        self.task.timing.cfg_change_detection_timing(rising_edge_chan=ch,
                                                     sample_mode=const.AcquisitionType.CONTINUOUS
                                                     )
         # see https://nidaqmx-python.readthedocs.io/en/latest/task.html for the prototype of callback method
@@ -328,6 +328,7 @@ class Scanner(tk.LabelFrame):
         self.task.start()
 
     def load_param(self, task_handle=None, signal_type=None, callback_date=None):
+        time.sleep(0.02)
         for i in range(self.num_scan_instr):
             instr = self.scan_instr_list[i].instr
             # every element in scan_instr_list is supposed to be compiled before
@@ -423,7 +424,7 @@ class MainWindow(tk.Frame):
         self.place_control_widgets()
         self.place_scanner()
         self.place_main_cols()
-        # self.init_spincore()
+        self.init_spincore()
 
     def place_scrollbar(self):
         # Create scrollbars

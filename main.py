@@ -41,7 +41,7 @@ class Descr(tk.LabelFrame):
         self.ch_label_list = []
         for i in range(channel_num):
             bgcolor = bgcolorlist[i%2]
-            ch_label = tk.Entry(self, width=12)
+            ch_label = tk.Entry(self, width=20)
             ch_label.grid(row=2+i, column=0, padx=8, sticky='e')
             self.ch_label_list.append(ch_label)
             self.ch = tk.Label(self, text='Channel '+str(i), bg=bgcolor, anchor="center")
@@ -416,7 +416,7 @@ class MainWindow(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master)
         self.master.title("SpinCore PulseBlasterUSB")
-        self.master.geometry('600x800')
+        self.master.geometry('1200x800')
         self.num_instr = 6 # number of instructions (one instruction is one column in this GUI)
         self.instrlist = [] # used to save all the instructions
         self.pack()
@@ -475,7 +475,7 @@ class MainWindow(tk.Frame):
         softtrig_button.grid(row=0, column=7)
 
         # file location label
-        location_label = tk.Label(self.control_frame, text="Location to load file: ")
+        location_label = tk.Label(self.control_frame, text="File name to load: ")
         location_label.grid(row=2, rowspan=2, column=0, columnspan=2, sticky='e')
 
         # location of .txt to load
@@ -491,7 +491,7 @@ class MainWindow(tk.Frame):
         loadconfig_button.grid(row=3, column=7, padx=5, pady=5, sticky='e')
 
         # saved file name label
-        filename_label = tk.Label(self.control_frame, text="File name to save as: ")
+        filename_label = tk.Label(self.control_frame, text="File name to save: ")
         filename_label.grid(row=4, column=0, columnspan=2, sticky='e')
 
         # name to append to file name when saving

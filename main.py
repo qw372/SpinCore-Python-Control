@@ -125,6 +125,7 @@ class Instr(tk.LabelFrame):
         self.values[2] = self.opc.current()
         self.values[3] = int(self.opd.get())
         self.values[4] = float(self.du.get()) * (1000**(2-self.un.current()))
+        # print(self.values[4])
 
 
 class Scanner(tk.LabelFrame):
@@ -293,7 +294,7 @@ class Scanner(tk.LabelFrame):
 
         self.scan_param = self.scan_param.T
         self.scan_param = np.repeat(self.scan_param, rep, axis=0)
-        np.random.shuffle(self.scan_param)
+        # np.random.shuffle(self.scan_param)
         # if scan_param is a 1-dim array, it will be turned into 2-dim
         # if scan_param is a 2-dim array, it won't change
         self.scan_param = np.reshape(self.scan_param, (len(self.scan_param), -1))
@@ -315,6 +316,9 @@ class Scanner(tk.LabelFrame):
         # load spincore the first scan parameters
         self.load_param()
 
+        # start spincore and make it ready to be triggered
+        pb_start()
+
         # a DAQ is used to read Spincore "running" signal, a falling edge will be used to trigger loading
         self.task = nidaqmx.Task()
         ch = self.daq_ch.get()
@@ -329,19 +333,20 @@ class Scanner(tk.LabelFrame):
 
     def load_param(self, task_handle=None, signal_type=None, callback_date=None):
         time.sleep(0.02)
-        for i in range(self.num_scan_instr):
-            instr = self.scan_instr_list[i].instr
-            # every element in scan_instr_list is supposed to be compiled before
-            unit = self.scan_instr_list[i].start_un.current()
-            self.main.instrlist[instr].un.current(unit)
-            self.main.instrlist[instr].du.delete(0, 'end')
-            self.main.instrlist[instr].du.insert(0, str(self.scan_param[self.counter][i]/(1000.0**(2-unit))))
+        if self.counter < len(self.scan_param):
+            for i in range(self.num_scan_instr):
+                instr = self.scan_instr_list[i].instr
+                # every element in scan_instr_list is supposed to be compiled before
+                unit = self.scan_instr_list[i].start_un.current()
+                self.main.instrlist[instr].un.current(unit)
+                self.main.instrlist[instr].du.delete(0, 'end')
+                self.main.instrlist[instr].du.insert(0, str(self.scan_param[self.counter][i]/(1000.0**(2-unit))))
 
-        self.counter += 1
-        self.main.loadboard()
-        self.progbar['value'] = self.counter/len(self.scan_param)*100.0
+            self.main.loadboard()
+            self.progbar['value'] = (self.counter)/len(self.scan_param)*100.0
+            self.counter += 1
 
-        if self.counter == len(self.scan_param):
+        elif self.counter == len(self.scan_param):
             self.stop_scan()
 
         # return an int is necessary for DAQ callback function
@@ -389,17 +394,28 @@ class Scanner(tk.LabelFrame):
                 return False
 
         config = configparser.ConfigParser()
+        config.optionxform = str
 
         config["Settings"] = {}
-        config["Settings"]["sample number"] = self.sample_num.get()
-        config["Settings"]["repetition"] = self.repetition.get()
-        config["Settings"]["unit"] = 'nanosecond'
+        samp_num = int(self.sample_num.get())
+        rep = int(self.repetition.get())
+        config["Settings"]["sample number"] = str(samp_num)
+        config["Settings"]["repetition"] = str(rep)
+        config["Settings"]["element number"] = str(samp_num*rep)
+        config["Settings"]["scan device"] = "SpinCore"
+        instr_init = self.scan_instr_list[0].instr
+        config["Settings"]["scan param"] = f"instr no. {instr_init}"
         for i in range(len(self.scan_param)):
             config[f"Sequence element {i}"] = {}
             for j in range(self.num_scan_instr):
                 instr = self.scan_instr_list[j].instr
-                config[f"Sequence element {i}"][f"instr no. {instr}"] = str(self.scan_param[i][j])
+                config[f"Sequence element {i}"][f"SpinCore [instr no. {instr}]"] = str(self.scan_param[i][j])
         configfile = open(file_name, "w")
+        config.write(configfile)
+        configfile.close()
+
+        # save scan sequence to camera folder, so the camera program can read it
+        configfile = open(r"C:\Users\dur!p5\github\pixelfly-python-control\scan_sequence\latest_sequence.ini", "w")
         config.write(configfile)
         configfile.close()
 

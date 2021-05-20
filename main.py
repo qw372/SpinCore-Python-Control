@@ -294,7 +294,7 @@ class Scanner(tk.LabelFrame):
 
         self.scan_param = self.scan_param.T
         self.scan_param = np.repeat(self.scan_param, rep, axis=0)
-        # np.random.shuffle(self.scan_param)
+        np.random.shuffle(self.scan_param)
         # if scan_param is a 1-dim array, it will be turned into 2-dim
         # if scan_param is a 2-dim array, it won't change
         self.scan_param = np.reshape(self.scan_param, (len(self.scan_param), -1))

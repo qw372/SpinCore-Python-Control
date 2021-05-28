@@ -16,6 +16,10 @@ bgcolorlist = ['lavender', 'honeydew'] # TTL output channel background color
 duration_unit = ["ms", "us", "ns"]
 opcodes = ["CONTINUE", "STOP", "LOOP", "END_LOOP", "JSR", "RTS", "BRANCH", "LONG_DELAY", "WAIT"]
 
+class newCombobox(ttk.Combobox):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
+        self.unbind_class("TCombobox", "<MouseWheel>")
 
 # the first column of this GUI, which are mainly descriptive labels
 class Descr(tk.LabelFrame):
@@ -84,7 +88,7 @@ class Instr(tk.LabelFrame):
         self.du = tk.Entry(label_frame, width=6)
         self.du.insert(0, "10")
         self.du.grid(row=0, column=0, padx=0)
-        self.un = ttk.Combobox(label_frame, values=duration_unit, width=3, state="readonly")
+        self.un = newCombobox(label_frame, values=duration_unit, width=3, state="readonly")
         self.un.grid(row=0, column=1, padx=0)
         self.un.current(0)
 
@@ -102,7 +106,7 @@ class Instr(tk.LabelFrame):
             self.cblist[i].grid(row=i+2, column=0, padx=0, pady=0, sticky='news')
 
     def place_opcode(self):
-        self.opc = ttk.Combobox(self, values=opcodes, width=10, state="readonly")
+        self.opc = newCombobox(self, values=opcodes, width=10, state="readonly")
         self.opc.grid(row=channel_num+2, column=0, padx=8, sticky="news")
         self.opc.current(0)
 
@@ -167,7 +171,7 @@ class Scanner(tk.LabelFrame):
             self.start_du = tk.Entry(start_label_frame, width=6)
             self.start_du.insert(0, "1")
             self.start_du.grid(row=0, column=0, padx=0)
-            self.start_un = ttk.Combobox(start_label_frame, values=duration_unit, width=3, state="readonly")
+            self.start_un = newCombobox(start_label_frame, values=duration_unit, width=3, state="readonly")
             self.start_un.grid(row=0, column=1, padx=0)
             self.start_un.current(0)
 
@@ -178,7 +182,7 @@ class Scanner(tk.LabelFrame):
             self.end_du = tk.Entry(end_label_frame, width=6)
             self.end_du.insert(0, "10")
             self.end_du.grid(row=0, column=0, padx=0)
-            self.end_un = ttk.Combobox(end_label_frame, values=duration_unit, width=3, state="readonly")
+            self.end_un = newCombobox(end_label_frame, values=duration_unit, width=3, state="readonly")
             self.end_un.grid(row=0, column=1, padx=0)
             self.end_un.current(0)
 
